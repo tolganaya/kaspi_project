@@ -1,13 +1,10 @@
-from typing import Type
 from uuid import uuid4
 
 import pytest
 
 from account.account import Account
-from database.implementations.pandas_db import AccountDatabasePandas
-from database.implementations.postgres_db import AccountDatabasePostgres
-from database.implementations.ram import AccountDatabaseRAM
-from database.database import ObjectNotFound, AccountDatabase
+from cmkcls.postgres_db import AccountDatabasePostgres
+from cmkcls.database import ObjectNotFound, AccountDatabase
 
 
 class TestAllDatabases:

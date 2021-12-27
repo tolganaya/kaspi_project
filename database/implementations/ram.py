@@ -2,8 +2,8 @@ from typing import List
 from uuid import UUID, uuid4
 
 from account.account import Account
-from database.database import AccountDatabase
-from database.database import ObjectNotFound
+from cmkcls.database import AccountDatabase
+from cmkcls.database import ObjectNotFound
 
 
 class AccountDatabaseRAM(AccountDatabase):

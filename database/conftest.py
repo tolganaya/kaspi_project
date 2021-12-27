@@ -2,10 +2,10 @@ from typing import Type, Any
 
 import pytest
 
-from database.database import AccountDatabase
-from database.implementations.pandas_db import AccountDatabasePandas
-from database.implementations.postgres_db import AccountDatabasePostgres
-from database.implementations.ram import AccountDatabaseRAM
+from cmkcls.database import AccountDatabase
+from cmkcls.pandas_db import AccountDatabasePandas
+from cmkcls.postgres_db import AccountDatabasePostgres
+from cmkcls.ram import AccountDatabaseRAM
 
 
 @pytest.fixture()
