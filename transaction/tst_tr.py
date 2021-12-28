@@ -5,7 +5,7 @@ from uuid import uuid4, UUID
 import pytest
 import json
 
-from transaction.transaction import Transaction
+from transaction.tr import Transaction
 
 
 class TestTransaction:

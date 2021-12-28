@@ -2,10 +2,10 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 import psycopg2
 import pandas as pd
-from pandas import Series
+from pandas import DataFrame, Series
 from account.account import Account
-from cmkcls.database import AccountDatabase
-from cmkcls.database import ObjectNotFound
+from database.database import AccountDatabase
+from database.database import ObjectNotFound
 
 
 class AccountDatabasePostgres(AccountDatabase):
@@ -50,13 +50,6 @@ class AccountDatabasePostgres(AccountDatabase):
         cur.execute("DELETE FROM accounts;")
         self.conn.commit()
 
-    def pandas_row_to_account(self, row: Series) -> Account:
-        return Account(
-            id_=UUID(row["id"]),
-            currency=row["currency"],
-            balance=row["balance"],
-        )
-
     def get_objects(self) -> List[Account]:
         cur = self.conn.cursor()
         cur.execute("SELECT * FROM accounts;")
@@ -64,6 +57,13 @@ class AccountDatabasePostgres(AccountDatabase):
         cols = [x[0] for x in cur.description]
         df = pd.DataFrame(data, columns=cols)
         return [self.pandas_row_to_account(row) for index, row in df.iterrows()]
+
+    def pandas_row_to_account(self, row: Series) -> Account:
+        return Account(
+            id_=UUID(row["id"]),
+            currency=row["currency"],
+            balance=row["balance"],
+        )
 
     def get_object(self, id_: UUID) -> Optional[Account]:
         cur = self.conn.cursor()

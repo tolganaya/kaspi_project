@@ -20,19 +20,7 @@ def create_account(database: AccountDatabase, currency: str, balance: Decimal) -
 
 
 if __name__ == "__main__":
-    dbname:str = os.environ.get("pg_dbname", "")
-    if dbname == "":
-        database = AccountDatabaseRAM()
-        print("Using RAM")
-    else:
-        port:int = 25060
-        user:str = os.environ.get("pg_user")
-        password:str = os.environ.get("pg_password")
-        host:str = "db-postgresql-nyc3-99638-do-user-4060406-0.b.db.ondigitalocean.com"
-        connection_str = f"dbname={dbname} port={port} user={user} password={password} host={host}"
-        database = AccountDatabasePostgres(connection=connection_str)
-        print("Connected!")
-    currency = input("Enter Currency: ")
-    balance = Decimal(input("Enter balance: "))
-    create_account(database=database, balance=balance, currency=currency)
+    connection_str = "dbname=pg_tolganay port=5432 user=postgres password=tolganay5366 host=localhost"
+    database = AccountDatabasePostgres(connection=connection_str)
+    print("Connected!")
     sys.exit(0)

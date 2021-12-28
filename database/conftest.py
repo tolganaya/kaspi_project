@@ -2,15 +2,15 @@ from typing import Type, Any
 
 import pytest
 
-from cmkcls.database import AccountDatabase
-from cmkcls.pandas_db import AccountDatabasePandas
-from cmkcls.postgres_db import AccountDatabasePostgres
-from cmkcls.ram import AccountDatabaseRAM
+from database.database import AccountDatabase
+from database.implementations.pandas_db import AccountDatabasePandas
+from database.implementations.postgres_db import AccountDatabasePostgres
+from database.implementations.ram import AccountDatabaseRAM
 
 
 @pytest.fixture()
 def connection_string(request: Any) -> str:
-    return "dbname=pg_tolganay port=5432 user=postgres password=tolganay5366 host=127.0.0.1"
+    return "dbname=pg_tolganay port=5432 user=postgres password=tolganay5366 host=localhost"
 
 
 @pytest.fixture(params=[AccountDatabasePandas, AccountDatabaseRAM, AccountDatabasePostgres])

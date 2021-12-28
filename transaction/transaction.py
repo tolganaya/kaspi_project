@@ -1,76 +1,66 @@
-import random
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 import json
-import xml
-import xml.etree.ElementTree as ET
+import random
 
 class CurrencyMismatchError(ValueError):
     pass
 
-
 @dataclass
-class Account:
-    id_: Optional[UUID]
+class Transaction:
+    id_: UUID
+    source_account: UUID
+    target_account: UUID
+    balance_brutto: Decimal
+    balance_netto: Decimal
     currency: str
-    balance: Decimal
 
-    def __lt__(self, other: "Account") -> bool:
-        assert isinstance(other, Account)
-        if self.currency != other.currency:
-            raise CurrencyMismatchError
-        return self.balance < other.balance
-
-    def to_json(self) -> dict:
-        return {
+    def to_json(self) -> str:
+        json_repr = {
             "id": str(self.id_),
+            "source_account": str(self.source_account),
+            "target_account": str(self.target_account),
+            "balance_brutto": float(self.balance_brutto),
+            "balance_netto": float(self.balance_netto),
             "currency": self.currency,
-            "balance": float(self.balance),
         }
+        return json.dumps(json_repr)
 
     def to_json_str(self) -> str:
         return json.dumps(self.to_json())
 
     @classmethod
-    def from_json_str(cls, json_str: str) -> "Account":  # Factory
+    def from_json_str(cls, json_str: str) -> "Transaction":  # Factory
         obj = json.loads(json_str)
+        assert "id" in obj
+        assert "source_account" in obj
+        assert "target_account" in obj
+        assert "balance_brutto" in obj
+        assert "balance_netto" in obj
         assert "currency" in obj
-        assert "balance" in obj
-
-        if "id" not in obj:
-            raise ValueError("id should be in json string!")
 
         return cls(
             id_=UUID(obj["id"]),
-            currency=obj["currency"],
-            balance=Decimal(obj["balance"]),
-        )
-
-    def to_xml(self) -> str:
-        root = ET.Element("account", id=str(self.id_), balance=str(self.balance), currency=self.currency)
-        return xml.etree.ElementTree.tostring(root, encoding="utf8")
-
-    @classmethod
-    def from_xml(cls, xml_str: str) -> "Account":
-        root = ET.fromstring(xml_str)
-        if root.tag != "account":
-            raise ValueError("This is not an account xml")
-        id_ = UUID(root.attrib["id"])
-        currency = root.attrib["currency"]
-        balance = Decimal(root.attrib["balance"])
-        return Account(
-            id_=id_,
-            currency=currency,
-            balance=balance,
+            source_account=UUID(obj["source_account"]),
+            target_account=UUID(obj["target_account"]),
+            balance_brutto=Decimal(obj["balance_brutto"]),
+            balance_netto=Decimal(obj["balance_netto"]),
+            currency=str(obj["currency"]),
         )
 
     @classmethod
-    def random(cls) -> "Account":  # Factory
+    def random(cls) -> "Transaction":  # Factory
+        u_account = uuid4()
+        u_id = uuid4()
+        bal_b = random.randint(100, 1000000)
+        bal_n = bal_b - random.randint(10,20)*bal_b/100
         return cls(
-            id_=uuid4(),
-            currency=random.choice(["AMD","AZN","BTC","CNH","EUR","HKD","JPY","KGS","KRW","KZT",
-                                    "MNT","RUB","TJS","TMT","TRY","UAH","USD","UZS"]),
-            balance=Decimal(random.randint(100, 1000000)),
+            id_=u_id,
+            source_account=uuid5(u_account,str(random.randint(1,20))),
+            target_account=uuid5(u_account,str(random.randint(21,40))),
+            balance_brutto=Decimal(bal_b),
+            balance_netto=Decimal(bal_n),
+            currency=random.choice(["AMD", "AZN", "BTC", "CNH", "EUR", "HKD", "JPY", "KGS", "KRW",
+                                    "KZT", "MNT", "RUB", "TJS", "TMT", "TRY", "UAH", "USD", "UZS"]),
         )

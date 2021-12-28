@@ -1,67 +1,47 @@
 from decimal import Decimal
+from unicodedata import decimal
 from uuid import uuid4, UUID
 
 import pytest
 import json
 
-from account.account import Account, CurrencyMismatchError
+from transaction.tr import Transaction
 
 
-class TestAccount:
-    def test_account_create(self) -> None:
-        '''account = Account(
-            id_=uuid4(),
-            currency="KZT",
-            balance=Decimal(10),
-        )'''
-        account = Account.random()
-        assert isinstance(account, Account)
-        #assert account.balance == 10
-        '''account2 = Account(
-            id_=uuid4(),
-            currency="KZT",
-            balance=Decimal(5),
-        )'''
-        account2 = Account.random()
-        #assert account2 < account
+class TestTransaction:
+    def test_transaction_create(self) -> None:
+        transaction = Transaction.random()
+        assert isinstance(transaction, Transaction)
+        transaction2 = Transaction.random()
+        assert isinstance(transaction2, Transaction)
+    '''def test_errors(self) -> None:
+        transaction = Transaction.random()
+        transaction2 = Transaction.random()
 
-    def test_errors(self) -> None:
-        '''account = Account(
-            id_=uuid4(),
-            currency="KZT",
-            balance=Decimal(10),
-        )'''
-        account = Account.random()
-        '''account2 = Account(
-            id_=uuid4(),
-            currency="USD",
-            balance=Decimal(5),
-        )'''
-        account2 = Account.random()
-        #with pytest.raises(CurrencyMismatchError):
-            #assert account2 < account
+        with pytest.raises(CurrencyMismatchError):
+            assert transaction2 = transaction'''
 
     def test_json_import_export(self) -> None:
-        account = Account.random()
+        transaction = Transaction.random()
 
-        json_account = account.to_json_str()
-        '''assert json.loads(json_account) == {
-            "id": str(account.id_),
-            "currency": account.currency,
-            "balance": account.balance,
-        }'''
+        json_account = transaction.to_json()
 
-    def test_account_from_json(self) -> None:
-        test_json = '{"id": "a7cf405f-21ec-41b1-b22e-10298eb42510", "currency": "KZT", "balance": 10.0}'
+    '''def test_transaction_from_json(self) -> None:
+        test_json = '{"id": "0de1375b-e9f5-4d04-afd8-efc388550a8a",' \
+                    '"source_account": "0de1375b-e9f5-4d04-afd8-efc388550a8a",' \
+                    '"target_account": "0de1375b-e9f5-4d04-afd8-efc388550a8a",' \
+                    '"balance_brutto": 6578,' \
+                    '"balance_netto": 2345,' \
+                    '"currency": "KZT",}'
 
-        account = Account.from_json_str(test_json)
-        assert isinstance(account, Account)
-        '''assert account.id_ == UUID("a7cf405f-21ec-41b1-b22e-10298eb42510")
-        assert account.balance == Decimal(10)
-        assert account.currency == "KZT"'''
+        transaction = Transaction.from_json_str(test_json)
+        assert isinstance(transaction, Transaction)
+        assert transaction.id_ == UUID("0de1375b-e9f5-4d04-afd8-efc388550a8a")
+        assert transaction.balance_brutto == Decimal(6578)
+        assert transaction.currency == "KZT"'''
 
     def test_to_json_from_json(self) -> None:
         # Check all fields are serialized
-        account = Account.random()
-        account2 = Account.from_json_str(account.to_json_str())
-        #assert account2 == account
+        transaction = Transaction.random()
+        transaction2 = Transaction.from_json_str(transaction.to_json())
+        assert transaction2 == transaction
