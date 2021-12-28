@@ -2,10 +2,8 @@ from typing import Type, Any
 
 import pytest
 
-from database.database import AccountDatabase
-from database.implementations.pandas_db import AccountDatabasePandas
-from database.implementations.postgres_db import AccountDatabasePostgres
-from database.implementations.ram import AccountDatabaseRAM
+from database.database import TransactionDatabase
+from database.implementations.postgres_db import TransactionDatabasePostgres
 
 
 @pytest.fixture()
@@ -13,8 +11,8 @@ def connection_string(request: Any) -> str:
     return "dbname=pg_tolganay port=5432 user=postgres password=tolganay5366 host=localhost"
 
 
-@pytest.fixture(params=[AccountDatabasePandas, AccountDatabaseRAM, AccountDatabasePostgres])
-def database_implementation(request: Any) -> Type[AccountDatabase]:
+@pytest.fixture(params=[TransactionDatabasePostgres])
+def database_implementation(request: Any) -> Type[TransactionDatabase]:
     implementation = request.param
     return implementation
 
@@ -22,9 +20,9 @@ def database_implementation(request: Any) -> Type[AccountDatabase]:
 @pytest.fixture()
 def database_connected(
         request: Any,
-        database_implementation: Type[AccountDatabase],
+        database_implementation: Type[TransactionDatabase],
         connection_string: str,
-) -> AccountDatabase:
-    if database_implementation == AccountDatabasePostgres:
-        return AccountDatabasePostgres(connection=connection_string)
+) -> TransactionDatabase:
+    if database_implementation == TransactionDatabasePostgres:
+        return TransactionDatabasePostgres(connection=connection_string)
     return database_implementation()

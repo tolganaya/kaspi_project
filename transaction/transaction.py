@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Optional, Tuple
 from uuid import UUID, uuid4, uuid5
+import uuid
 import json
 import random
 
@@ -9,12 +11,18 @@ class CurrencyMismatchError(ValueError):
 
 @dataclass
 class Transaction:
-    id_: UUID
-    source_account: UUID
-    target_account: UUID
+    id_: Optional[UUID]
+    source_account: Optional[UUID]
+    target_account: Optional[UUID]
     balance_brutto: Decimal
     balance_netto: Decimal
     currency: str
+
+    def __lt__(self, other: "Transaction") -> bool:
+        assert isinstance(other, Transaction)
+        if self.currency != other.currency:
+            raise CurrencyMismatchError
+        return self.balance_brutto < other.balance_brutto
 
     def to_json(self) -> str:
         json_repr = {
@@ -51,14 +59,13 @@ class Transaction:
 
     @classmethod
     def random(cls) -> "Transaction":  # Factory
-        u_account = uuid4()
         u_id = uuid4()
-        bal_b = random.randint(100, 1000000)
-        bal_n = bal_b - random.randint(10,20)*bal_b/100
+        bal_b = random.randint(1000, 1000000)
+        bal_n = round((bal_b - random.randint(10, 20) * bal_b / 100), 2)
         return cls(
             id_=u_id,
-            source_account=uuid5(u_account,str(random.randint(1,20))),
-            target_account=uuid5(u_account,str(random.randint(21,40))),
+            source_account=uuid5(uuid.NAMESPACE_DNS, str(random.randint(1, 10))),
+            target_account=uuid5(uuid.NAMESPACE_DNS, str(random.randint(11, 20))),
             balance_brutto=Decimal(bal_b),
             balance_netto=Decimal(bal_n),
             currency=random.choice(["AMD", "AZN", "BTC", "CNH", "EUR", "HKD", "JPY", "KGS", "KRW",

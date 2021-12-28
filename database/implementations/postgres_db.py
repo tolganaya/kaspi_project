@@ -2,22 +2,25 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 import psycopg2
 import pandas as pd
-from pandas import DataFrame, Series
-from account.account import Account
-from database.database import AccountDatabase
+from pandas import Series
+from transaction.transaction import Transaction
+from database.database import TransactionDatabase
 from database.database import ObjectNotFound
 
 
-class AccountDatabasePostgres(AccountDatabase):
+class TransactionDatabasePostgres(TransactionDatabase):
     def __init__(self, connection: str,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.conn = psycopg2.connect(connection)
         cur = self.conn.cursor()
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS accounts (
+        CREATE TABLE IF NOT EXISTS transactions (
             id varchar primary key ,
-            currency varchar ,
-            balance decimal 
+            source_account varchar,
+            target_account varchar,
+            balance_brutto decimal, 
+            balance_netto decimal,
+            currency varchar
         );
         """)
         self.conn.commit()
@@ -26,14 +29,16 @@ class AccountDatabasePostgres(AccountDatabase):
     def close_connection(self):
         self.conn.close()
 
-    def _save(self, account: Account) -> None:
-        if account.id_ is None:
-            account.id_ = uuid4()
+    def _save(self, transaction: Transaction) -> None:
+        if transaction.id_ is None:
+            transaction.id_ = uuid4()
 
         cur = self.conn.cursor()
         cur.execute("""
-                UPDATE accounts SET currency = %s, balance = %s WHERE id = %s;
-        """, (account.currency, account.balance, str(account.id_)))
+                UPDATE transactions SET source_account = %s, target_account = %s,
+                balance_brutto = %s, balance_netto = round(%s,2), currency = %s WHERE id = %s;
+        """, (str(transaction.source_account), str(transaction.target_account), transaction.balance_brutto,
+              transaction.balance_netto, transaction.currency, str(transaction.id_)))
         rows_count = cur.rowcount
         self.conn.commit()
 
@@ -41,33 +46,38 @@ class AccountDatabasePostgres(AccountDatabase):
         if rows_count == 0:
             cur = self.conn.cursor()
             cur.execute("""
-                    INSERT INTO accounts (id, currency, balance) VALUES (%s, %s, %s);
-                    """, (str(account.id_), account.currency, account.balance))
+                    INSERT INTO transactions (id, source_account, target_account,
+                    balance_brutto, balance_netto, currency) VALUES (%s, %s, %s, %s, %s, %s);
+                    """, (str(transaction.id_), str(transaction.source_account), str(transaction.target_account),
+                          transaction.balance_brutto, round(transaction.balance_netto,2), transaction.currency))
             self.conn.commit()
 
     def clear_all(self) -> None:
         cur = self.conn.cursor()
-        cur.execute("DELETE FROM accounts;")
+        cur.execute("DELETE FROM transactions;")
         self.conn.commit()
 
-    def get_objects(self) -> List[Account]:
+    def pandas_row_to_transaction(self, row: Series) -> Transaction:
+        return Transaction(
+            id_=UUID(row["id"]),
+            source_account=row["source_account"],
+            target_account=row["target_account"],
+            balance_brutto=row["balance_brutto"],
+            balance_netto=row["balance_netto"],
+            currency=row["currency"],
+        )
+
+    def get_objects(self) -> List[Transaction]:
         cur = self.conn.cursor()
-        cur.execute("SELECT * FROM accounts;")
+        cur.execute("SELECT * FROM transactions;")
         data = cur.fetchall()
         cols = [x[0] for x in cur.description]
         df = pd.DataFrame(data, columns=cols)
-        return [self.pandas_row_to_account(row) for index, row in df.iterrows()]
+        return [self.pandas_row_to_transaction(row) for index, row in df.iterrows()]
 
-    def pandas_row_to_account(self, row: Series) -> Account:
-        return Account(
-            id_=UUID(row["id"]),
-            currency=row["currency"],
-            balance=row["balance"],
-        )
-
-    def get_object(self, id_: UUID) -> Optional[Account]:
+    def get_object(self, id_: UUID) -> Optional[Transaction]:
         cur = self.conn.cursor()
-        cur.execute("SELECT * FROM accounts WHERE id = %s;", (str(id_),))
+        cur.execute("SELECT * FROM transactions WHERE id = %s;", (str(id_),))
         print("Trying to find", str(id_))
         data = cur.fetchall()
         if len(data) == 0:
@@ -76,16 +86,16 @@ class AccountDatabasePostgres(AccountDatabase):
         # This is the implementation without Pandas
         # for i in range(len(cols)):
         #     if str(cols[i]) == "id":
-        #         account_id = data[0][i]
+        #         transaction_id = data[0][i]
         #     if str(cols[i]) == "balance":
-        #         account_balance = data[0][i]
+        #         transaction_balance = data[0][i]
         #     if str(cols[i]) == "currency":
-        #         account_currency = data[0][i]
-        # return Account(
-        #     id_=UUID(account_id),
-        #     balance=account_balance,
-        #     currency=account_currency,
+        #         transaction_currency = data[0][i]
+        # return Transaction(
+        #     id_=UUID(transaction_id),
+        #     balance=transaction_balance,
+        #     currency=transaction_currency,
         # )
 
         df = pd.DataFrame(data, columns=cols)
-        return self.pandas_row_to_account(row=df.iloc[0])
+        return self.pandas_row_to_transaction(row=df.iloc[0])

@@ -6,17 +6,17 @@
     <title>Title</title>
 </head>
 <body>
-<h1>Transactions</h1>
+<h1>Accounts</h1>
 <table class="table table-hover" style="margin: 1em">
-    {% for transaction in transactions %}
-    <tr onclick="window.location='/transactions/{{transaction.id_}}'">
-        <td>{{transaction.id_}}</td>
+    {% for account in accounts %}
+    <tr onclick="window.location='/accounts/{{account.id_}}'">
+        <td>{{account.id_}}</td>
         <td
-            {% if transaction.balance < 200 %}
+            {% if account.balance < 200 %}
                 class = "table-danger"
             {% endif %}
-        >{{transaction.balance}}</td>
-        <td>{{transaction.currency}}</td>
+        >{{account.balance}}</td>
+        <td>{{account.currency}}</td>
     </tr>
     {% endfor %}
 </table>
