@@ -16,8 +16,12 @@ Including another URLconf
 from django.urls import path
 from webapp import views
 
+
 urlpatterns = [
     path('', views.index),
+    path('accounts/', views.accounts_list),
     path('transactions/', views.transactions_list),
+    path('button/', views.button(val)),
+    path('api/accounts/', views.accounts),
     path('api/transactions/', views.transactions),
 ]

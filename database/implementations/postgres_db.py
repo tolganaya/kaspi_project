@@ -1,9 +1,11 @@
+import random
 from typing import List, Optional
 from uuid import UUID, uuid4
 import psycopg2
 import pandas as pd
 from pandas import Series
 from transaction.transaction import Transaction
+from account.account import Account
 from database.database import TransactionDatabase
 from database.database import ObjectNotFound
 
@@ -24,33 +26,39 @@ class TransactionDatabasePostgres(TransactionDatabase):
         );
         """)
         self.conn.commit()
+        cur.execute("""
+                CREATE TABLE IF NOT EXISTS max_balance_account (
+                max_balance varchar,
+                currency varchar);
+                    """)
+        self.conn.commit()
+        cur.execute("""insert into max_balance_account 
+            (SELECT max(balance) as max_balance, currency FROM accounts group by currency);
+                """)
+        self.conn.commit()
 
 
     def close_connection(self):
         self.conn.close()
 
     def _save(self, transaction: Transaction) -> None:
-        if transaction.id_ is None:
-            transaction.id_ = uuid4()
-
         cur = self.conn.cursor()
         cur.execute("""
-                UPDATE transactions SET source_account = %s, target_account = %s,
-                balance_brutto = %s, balance_netto = round(%s,2), currency = %s WHERE id = %s;
-        """, (str(transaction.source_account), str(transaction.target_account), transaction.balance_brutto,
-              transaction.balance_netto, transaction.currency, str(transaction.id_)))
-        rows_count = cur.rowcount
-        self.conn.commit()
-
-        print("ROWS COUNT", rows_count)
-        if rows_count == 0:
-            cur = self.conn.cursor()
-            cur.execute("""
-                    INSERT INTO transactions (id, source_account, target_account,
+                select id from accounts
+            """)
+        acc_id = cur.fetchall()
+        acc_id1 = random.sample(acc_id,k=1)[0][0]
+        acc_id2 = random.sample(acc_id,k=1)[0][0]
+        while True:
+            if acc_id1 == acc_id2:
+                acc_id2 = random.sample(acc_id,k=1)[0][0]
+            else: break
+        cur.execute("""
+                    insert into transactions (id, source_account, target_account,
                     balance_brutto, balance_netto, currency) VALUES (%s, %s, %s, %s, %s, %s);
-                    """, (str(transaction.id_), str(transaction.source_account), str(transaction.target_account),
-                          transaction.balance_brutto, round(transaction.balance_netto,2), transaction.currency))
-            self.conn.commit()
+        """, (str(transaction.id_), str(acc_id1), str(acc_id2), transaction.balance_brutto,
+              round(transaction.balance_netto,2), transaction.currency))
+        self.conn.commit()
 
     def clear_all(self) -> None:
         cur = self.conn.cursor()
@@ -67,6 +75,29 @@ class TransactionDatabasePostgres(TransactionDatabase):
             currency=row["currency"],
         )
 
+    def pandas_row_to_account(self, row: Series) -> Account:
+        return Account(
+            id_=UUID(row["id"]),
+            currency=row["currency"],
+            balance=row["balance"],
+        )
+
+    def max_obj(self) -> List[Account]:
+        cur = self.conn.cursor()
+        cur.execute("SELECT id ,max(balance) ,currency FROM accounts group by currency ,id;")
+        data = cur.fetchall()
+        cols = [x[0] for x in cur.description]
+        df = pd.DataFrame(data, columns=cols)
+        return [self.pandas_row_to_account(row) for index, row in df.iterrows()]
+
+    def button(self, val) -> List[Account]:
+        cur = self.conn.cursor()
+        cur.execute("Insert into accounts (id, currency, balance) values (%s, 'KZT', 0);",str(val))
+        data = cur.fetchall()
+        cols = [x[0] for x in cur.description]
+        df = pd.DataFrame(data, columns=cols)
+        return [self.pandas_row_to_account(row) for index, row in df.iterrows()]
+
     def get_objects(self) -> List[Transaction]:
         cur = self.conn.cursor()
         cur.execute("SELECT * FROM transactions;")
@@ -74,6 +105,14 @@ class TransactionDatabasePostgres(TransactionDatabase):
         cols = [x[0] for x in cur.description]
         df = pd.DataFrame(data, columns=cols)
         return [self.pandas_row_to_transaction(row) for index, row in df.iterrows()]
+
+    def get_objects_ac(self) -> List[Account]:
+        cur = self.conn.cursor()
+        cur.execute("SELECT * FROM accounts;")
+        data = cur.fetchall()
+        cols = [x[0] for x in cur.description]
+        df = pd.DataFrame(data, columns=cols)
+        return [self.pandas_row_to_account(row) for index, row in df.iterrows()]
 
     def get_object(self, id_: UUID) -> Optional[Transaction]:
         cur = self.conn.cursor()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from account.account import Account
 from decimal import Decimal
 from typing import Optional, Tuple
 from uuid import UUID, uuid4, uuid5
@@ -60,7 +61,7 @@ class Transaction:
     @classmethod
     def random(cls) -> "Transaction":  # Factory
         u_id = uuid4()
-        bal_b = random.randint(1000, 1000000)
+        bal_b = random.randint(100, 100000)
         bal_n = round((bal_b - random.randint(10, 20) * bal_b / 100), 2)
         return cls(
             id_=u_id,
